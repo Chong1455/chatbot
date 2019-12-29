@@ -13,21 +13,21 @@ module.exports = app => {
 		}
 		
 		async function learn(agent) {
-			Demand.findOne({ 'course': agent.parameters.courses}, function(err, course) {
+			Demand.findOne({ 'course': agent.parameters.course}, function(err, course) {
 				if (course !== null) {
 					course.counter++;
 					course.save();
 				} else {
-					const demand = new Demand({course: agent.parameters.courses});
+					const demand = new Demand({course: agent.parameters.course});
 					demand.save();
 				}
 			});
-			let responseText = `You want to learn about ${agent.parameters.courses}. 
+			let responseText = `You want to learn about ${agent.parameters.course}. 
                     Here is a link to all of my courses: https://www.udemy.com/user/jana-bergant`;
 
-            let coupon = await Coupon.findOne({'course': agent.parameters.courses});
+            let coupon = await Coupon.findOne({'course': agent.parameters.course});
             if (coupon !==null) {
-            	responseText = `You want to learn about ${agent.parameters.courses}.
+            	responseText = `You want to learn about ${agent.parameters.course}.
             		Here is a link to the course: ${coupon.link}`;
             }
             agent.add(responseText);
