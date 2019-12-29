@@ -22,8 +22,7 @@ module.exports = app => {
 					demand.save();
 				}
 			});
-			let responseText = `You want to learn about ${agent.parameters.courses}. 
-                    Here is a link to all of my courses: https://www.udemy.com/user/jana-bergant`;
+			
 
             let coupon = await Coupon.findOne({'course': agent.parameters.courses});
             if (coupon !==null) {
