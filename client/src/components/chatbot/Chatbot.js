@@ -24,7 +24,9 @@ class Chatbot extends Component {
 		this.state = {
 			messages: [],
 			showBot: true,
-			shopWelcomeSent: false
+			shopWelcomeSent: false,
+			clientToken: false,
+			regenerateToken: 0
 		};
 		if (cookies.get('userID') === undefined) {
 			cookies.set('userID', uuid(), { path: '/'});
@@ -41,63 +43,89 @@ class Chatbot extends Component {
 					text: text
 				}
 			}
-		};
+		}
 		this.setState({messages: [...this.state.messages, says]});
-		
-		try {
-			const res = await axios.post('/api/df_text_query', {text, userID: cookies.get('userID')});
 
-			for (let msg of res.data.fulfillmentMessages) {
-				says = {
-					speaks: 'bot',
-					msg: msg
-				}
-				this.setState({messages: [...this.state.messages, says]});
+		const request = {
+			queryInput: {
+				text: {
+					text: text,
+					languageCode: 'en-US',
+				},
 			}
+		};
+		await this.df_client_call(request);
+	};
+
+	async df_event_query(event) {
+		const request = {
+			queryInput: {
+				event: {
+					name: event,
+					languageCode: 'en-US',
+				},
+			}
+		};
+		await this.df_client_call(request);
+	};
+
+	async df_client_call(request) {
+		try {
+			if (this.state.clientToken === false) {
+				const res = await axios.get('/api/get_client_token');
+				this.setState({clientToken: res.data.token});
+			}
+
+			var config = {
+				headers: {
+					'Authorization': 'Bearer ' + this.state.clientToken,
+					'Content-Type': 'application/json; charset=utf-8'
+				}
+			};
+
+			const res = await axios.post(
+				'https://dialogflow.googleapis.com/v2/projects/' + process.env.REACT_APP_GOOGLE_PROJECT_ID +
+				'/agent/sessions/' + process.env.REACT_APP_DF_SESSION_ID + cookies.get('userID') + ':detectIntent',
+				request,
+				config
+			);
+
+			let says = {};
+
+			if (res.data.queryResult.fulfillmentMessages) {
+				for(let msg of res.data.queryResult.fulfillmentMessages) {
+					let says = {
+						speaks: 'bot',
+						msg: msg
+					}
+					this.setState({messages: [...this.state.messages, says]});
+				}
+			}
+			this.setState({ regenerateToken: 0 });
 		} catch(e) {
-			says = {
+			console.log('error');
+
+			if (e.response.status === 401 && this.state.regenerateToken < 1) {
+				this.setState({clientToken: false, regenerateToken: 1});
+				this.df_client_call(request);
+			}
+			else {
+				let says = {
 					speaks: 'bot',
 					msg: {
 						text: {
 							text: "I'm having trouble now. I need to terminate. will be back later"
 						}
-					}
+					}		
 				}
 				this.setState({messages: [...this.state.messages, says]});
 				let that = this;
 				setTimeout(function() {
 					that.setState({ showBot: false })
 				}, 2000);
-		}
-	};
-
-	async df_event_query(event) {
-		try {
-			const res = await axios.post('/api/df_event_query', {event, userID: cookies.get('userID')});
-
-			for(let msg of res.data.fulfillmentMessages) {
-				let says = {
-					speaks: 'bot',
-					msg: msg
-				}
-				this.setState({messages: [...this.state.messages, says]});
 			}
-		} catch(e) {
-			let says = {
-				speaks: 'bot',
-				msg: {
-					text: {
-						text: "I'm having trouble now. I need to terminate. will be back later"
-					}
-				}		
-			}
-			this.setState({messages: [...this.state.messages, says]});
-			let that = this;
-			setTimeout(function() {
-				that.setState({ showBot: false })
-			}, 2000);
 		}
-	};
+	}
 
 	resolveAfterXSeconds(x) {
 		return new Promise(resolve => {
@@ -160,13 +188,13 @@ class Chatbot extends Component {
 	}
 
 	renderCards(cards) {
-		return cards.map((card, i) => <Card key={i} payload={card.structValue} />);
+		return cards.map((card, i) => <Card key={i} payload={card} />);
 	}
 
 	renderOneMessage(message, i) {
 		if (message.msg && message.msg.text && message.msg.text.text) {
 			return <Message key={i} speaks={message.speaks} text={message.msg.text.text} />;
-		} else if(message.msg && message.msg.payload && message.msg.payload.fields && message.msg.payload.fields.cards){
+		} else if(message.msg && message.msg.payload && message.msg.payload.cards){
 			return <div key={i}>
 				<div clasName="card-panel grey lighten-5 z-depth-1">
 					<div style={{overflow: "hidden"}}>
@@ -174,8 +202,8 @@ class Chatbot extends Component {
 							 <a href='/' className="btn-floating btn-large waves-effect waves-light red">{message.speaks}</a>
 						</div>
 						<div style={{ overflow: 'auto', overflowY: 'scroll' }}>
-							<div style={{ height: 300, width:message.msg.payload.fields.cards.listValue.values.length * 270}}>
-								{this.renderCards(message.msg.payload.fields.cards.listValue.values)}
+							<div style={{ height: 300, width:message.msg.payload.cards.length * 270}}>
+								{this.renderCards(message.msg.payload.cards)}
 							</div>
 						</div>
 					</div>
@@ -183,15 +211,14 @@ class Chatbot extends Component {
 			</div>
 		} else if (message.msg &&
 			message.msg.payload &&
-			message.msg.payload.fields &&
-			message.msg.payload.fields.quick_replies
+			message.msg.payload.quick_replies
 		) {
 			return <QuickReplies
-				text={message.msg.payload.fields.text ? message.msg.payload.fields.text: null}
+				text={message.msg.payload.text ? message.msg.payload.text: null}
 				key={i}
 				replyClick={this._handleQuickReplyPayload}
 				speaks={message.speaks}
-				payload={message.msg.payload.fields.quick_replies.listValue.values} />;
+				payload={message.msg.payload.quick_replies} />;
 		}
 	}
 
