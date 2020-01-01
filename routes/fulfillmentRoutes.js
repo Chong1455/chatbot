@@ -14,20 +14,21 @@ module.exports = app => {
 		}
 		
 		async function registration(agent) {
-			const registration = new Registration({
-				name: agent.parameters.name,
-				address: agent.parameters.address,
-				phone: agent.parametes.phone,
-				email: agent.parameters.email,
-				dataSent: Date.now()
-			});
-			try {
-				let reg = await registration.save();
-				console.log(reg);
-			} catch(err) {
-				console.log(err);
-			}
-		}
+
+            const registration = new Registration({
+                name: agent.parameters.name,
+                address: agent.parameters.address,
+                phone: agent.parameters.phone,
+                email: agent.parameters.email,
+                dateSent: Date.now()
+            });
+            try{
+                let reg = await registration.save();
+                console.log(reg);
+            } catch (err){
+                console.log(err);
+            }
+        }
 
 		async function learn(agent) {
 			Demand.findOne({ 'course': agent.parameters.course}, function(err, course) {

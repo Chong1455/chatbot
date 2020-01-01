@@ -195,7 +195,7 @@ class Chatbot extends Component {
 			return <Message key={i} speaks={message.speaks} text={message.msg.text.text} />;
 		} else if(message.msg && message.msg.payload && message.msg.payload.cards){
 			return <div key={i}>
-				<div clasName="card-panel grey lighten-5 z-depth-1">
+				<div className="card-panel grey lighten-5 z-depth-1">
 					<div style={{overflow: "hidden"}}>
 						<div className="col s2">
 							 <a href='/' className="btn-floating btn-large waves-effect waves-light red">{message.speaks}</a>
