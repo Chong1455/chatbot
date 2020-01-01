@@ -15,8 +15,8 @@ module.exports = app => {
    		res.send(responses[0].queryResult);
 	});
 
-	app.post('/api/get_client_token', async (req,res) => {
+	app.get('/api/get_client_token', async (req,res) => {
 		let token = await chatbot.getToken();
    		res.send({token});
-	});
+	})
 }

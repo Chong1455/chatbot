@@ -84,8 +84,7 @@ class Chatbot extends Component {
 			};
 
 			const res = await axios.post(
-				'https://dialogflow.googleapis.com/v2/projects/' + process.env.REACT_APP_GOOGLE_PROJECT_ID +
-				'/agent/sessions/' + process.env.REACT_APP_DF_SESSION_ID + cookies.get('userID') + ':detectIntent',
+				'https://dialogflow.googleapis.com/v2/projects/' + 'reactpageagent-myomxv/agent/sessions/react-bot-session:detectIntent',
 				request,
 				config
 			);
@@ -101,7 +100,7 @@ class Chatbot extends Component {
 					this.setState({messages: [...this.state.messages, says]});
 				}
 			}
-			this.setState({ regenerateToken: 0 });
+			
 		} catch(e) {
 			console.log('error');
 
